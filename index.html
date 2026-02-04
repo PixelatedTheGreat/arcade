@@ -61,6 +61,7 @@
     .card-img .placeholder { font-size: 2rem; font-weight: 600; color: #444; }
     .card-body { padding: 0.875rem; }
     .card-title { font-size: 0.875rem; font-weight: 500; color: #eee; }
+    .card-type { font-size: 0.7rem; color: #666; margin-top: 0.25rem; }
     .modal {
       position: fixed;
       inset: 0;
@@ -156,18 +157,33 @@
   </div>
   <script>
     // ============================================
-    // CHANGE THIS TO YOUR ASSETS URL FROM PART 1
+    // CHANGE THIS TO YOUR ASSETS URL
     // ============================================
     const CDN = 'https://algebranotesk12.pages.dev/src';
 
     // ============================================
     // ADD YOUR GAMES HERE
     // ============================================
+    // 
+    // TWO TYPES:
+    //
+    // 1. LOCAL GAME (from your assets repo):
+    //    { id: 'folder-name', title: 'Game Name', img: 'image.png' }
+    //
+    // 2. EMBED (external URL):
+    //    { id: 'unique-id', title: 'Game Name', embed: 'https://example.com/game', img: 'https://example.com/image.png' }
+    //
+    // ============================================
+
     const games = [
+      // Local games
       { id: 'retro-bowl', title: 'Retro Bowl', img: 'logo.png' },
       { id: 'drive-mad/drive-mad', title: 'Drive Mad', img: 'logo.jpg' },
-      // Add more games like this:
-      // { id: 'folder-name', title: 'Game Name', img: 'image.png' },
+      { id: 'moto-x3m', title: 'Moto X3M', img: 'moto.jpg' },
+      { id: 'polytrack', title: 'Poly Track', img: 'null' },
+      // Embeds (external URLs) - examples:
+      // { id: 'krunker', title: 'Krunker', embed: 'https://krunker.io', img: 'https://krunker.io/img/logo.png' },
+      // { id: 'scratch-game', title: 'Scratch Game', embed: 'https://scratch.mit.edu/projects/123456/embed', img: null },
     ];
 
     // ============================================
@@ -184,6 +200,30 @@
     const closeBtn = document.getElementById('closeBtn');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
 
+    // Get the image URL based on game type
+    function getImageUrl(game) {
+      if (!game.img) return null;
+      
+      // If img is already a full URL (for embeds)
+      if (game.img.startsWith('http')) {
+        return game.img;
+      }
+      
+      // Local game - build URL from CDN
+      return `${CDN}/${game.id}/${game.img}`;
+    }
+
+    // Get the game URL
+    function getGameUrl(game) {
+      // If it's an embed, use the embed URL directly
+      if (game.embed) {
+        return game.embed;
+      }
+      
+      // Local game - build URL from CDN
+      return `${CDN}/${game.id}/index.html`;
+    }
+
     function render(filter = '') {
       const filtered = games.filter(g => g.title.toLowerCase().includes(filter.toLowerCase()));
       if (filtered.length === 0) {
@@ -192,16 +232,26 @@
         return;
       }
       empty.style.display = 'none';
-      grid.innerHTML = filtered.map(g => `
-        <div class="card" data-id="${g.id}">
-          <div class="card-img">
-            ${g.img 
-              ? `<img src="${CDN}/${g.id}/${g.img}" alt="${g.title}" onerror="this.outerHTML='<span class=placeholder>${g.title[0]}</span>'">`
-              : `<span class="placeholder">${g.title[0]}</span>`}
+      
+      grid.innerHTML = filtered.map(g => {
+        const imgUrl = getImageUrl(g);
+        const isEmbed = !!g.embed;
+        
+        return `
+          <div class="card" data-id="${g.id}">
+            <div class="card-img">
+              ${imgUrl 
+                ? `<img src="${imgUrl}" alt="${g.title}" onerror="this.outerHTML='<span class=placeholder>${g.title[0]}</span>'">`
+                : `<span class="placeholder">${g.title[0]}</span>`}
+            </div>
+            <div class="card-body">
+              <div class="card-title">${g.title}</div>
+              ${isEmbed ? '<div class="card-type">External</div>' : ''}
+            </div>
           </div>
-          <div class="card-body"><div class="card-title">${g.title}</div></div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+      
       grid.querySelectorAll('.card').forEach(card => {
         card.onclick = () => open(card.dataset.id);
       });
@@ -212,7 +262,7 @@
       if (!game) return;
       modalTitle.textContent = game.title;
       loader.classList.remove('hidden');
-      frame.src = `${CDN}/${id}/index.html`;
+      frame.src = getGameUrl(game);
       frame.onload = () => loader.classList.add('hidden');
       modal.classList.add('open');
     }
